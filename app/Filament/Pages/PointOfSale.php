@@ -15,7 +15,10 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
 {
     use Forms\Concerns\InteractsWithForms;
 
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
     protected static string $view = 'filament.pages.point-of-sale';
+
 
     public array $cart = [];
     public $product_id = null;
