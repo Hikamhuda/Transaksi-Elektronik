@@ -40,8 +40,9 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
             Select::make('product_id')
                 ->label('Pilih Produk')
                 ->options(Product::all()->pluck('name', 'id'))
+                ->searchable()
                 ->required(),
-
+        
             TextInput::make('quantity')
                 ->numeric()
                 ->minValue(1)

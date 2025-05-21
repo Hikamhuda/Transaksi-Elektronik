@@ -48,8 +48,33 @@ class TransactionResource extends Resource
                 TextColumn::make('created_at')->label('Waktu')->dateTime(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('user_id')
+                    ->label('Kasir')
+                    ->relationship('user', 'name')
+                    ->searchable(),
+
+                Tables\Filters\Filter::make('created_at')
+                    ->label('Tanggal Transaksi')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')->label('Dari'),
+                        Forms\Components\DatePicker::make('until')->label('Sampai'),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        return $query
+                            ->when($data['from'], fn($q) => $q->whereDate('created_at', '>=', $data['from']))
+                            ->when($data['until'], fn($q) => $q->whereDate('created_at', '<=', $data['until']));
+                    }),
+
+                Tables\Filters\Filter::make('min_total')
+                    ->label('Total Minimal')
+                    ->form([
+                        Forms\Components\TextInput::make('amount')->numeric()->label('Minimal Total'),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        return $query->when($data['amount'], fn($q) => $q->where('total_price', '>=', $data['amount']));
+                    }),
             ])
+
             ->actions([
                 Tables\Actions\EditAction::make(),
 
