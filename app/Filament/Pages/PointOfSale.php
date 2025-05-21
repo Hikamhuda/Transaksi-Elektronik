@@ -17,6 +17,9 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public ?float $change = null;
+    public ?int $lastTransactionId = null;
+
     protected static string $view = 'filament.pages.point-of-sale';
 
 
@@ -24,6 +27,7 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
     public $product_id = null;
     public $quantity = 1;
     public $paid_amount = 0;
+
 
     public function mount()
     {
@@ -101,7 +105,13 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
             Product::where('id', $item['product_id'])->decrement('stock', $item['quantity']);
         }
 
+        $this->change = $transaction->change;
+        $this->lastTransactionId = $transaction->id;
+
+        // Reset cart, lalu redirect ke PDF download
         $this->reset(['cart', 'paid_amount']);
-        session()->flash('success', 'Transaksi berhasil disimpan!');
+
+        return redirect()->route('receipt.pdf', ['transaction' => $transaction->id]);
+
     }
 }
