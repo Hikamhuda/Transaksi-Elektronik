@@ -15,6 +15,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 
 class StockPurchaseResource extends Resource
 {
@@ -29,35 +31,114 @@ class StockPurchaseResource extends Resource
                 Select::make('supplier_id')
                     ->relationship('supplier', 'name')
                     ->searchable()
+                    ->preload()
                     ->label('Supplier')
-                    ->nullable(),
+                    ->nullable()
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('name')
+                            ->required(),
+                        Forms\Components\TextInput::make('phone'),
+                        Forms\Components\Textarea::make('address'),
+                    ]),
 
                 DatePicker::make('purchase_date')
                     ->required()
                     ->default(now()),
 
-                TextInput::make('total_price')
-                    ->disabled()   // otomatis di-hitung dari items
+                Forms\Components\Repeater::make('items')
+                    ->relationship()
+                    ->schema([
+                        Select::make('product_id')
+                            ->relationship('product', 'name')
+                            ->required()
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->afterStateUpdated(function (Get $get, Set $set) {
+                                self::updateTotalPrice($get, $set);
+                            }),
+                        TextInput::make('quantity')
+                            ->numeric()
+                            ->required()
+                            ->default(1)
+                            ->live()
+                            ->afterStateUpdated(function (Get $get, Set $set) {
+                                self::updateTotalPrice($get, $set);
+                            }),
+                        TextInput::make('price')
+                            ->numeric()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (Get $get, Set $set) {
+                                self::updateTotalPrice($get, $set);
+                            }),
+                    ])
+                    ->columns(3)
+                    ->columnSpanFull()
+                    ->live()
+                    ->afterStateUpdated(function (Get $get, Set $set) {
+                        self::updateTotalPrice($get, $set);
+                    }),
 
+                TextInput::make('total_price')
+                    ->numeric()
+                    ->disabled()
+                    ->dehydrated()
+                    ->default(0),
             ]);
+    }
+
+    protected static function updateTotalPrice(Get $get, Set $set): void
+    {
+        $items = collect($get('items'))->filter(fn ($item) => 
+            !empty($item['product_id']) && 
+            !empty($item['quantity']) && 
+            !empty($item['price'])
+        );
+
+        $total = $items->sum(fn ($item) => (float) $item['quantity'] * (float) $item['price']);
+        
+        $set('total_price', number_format($total, 2, '.', ''));
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('supplier.name')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('purchase_date')
+                    ->date()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('total_price')
+                    ->numeric()
+                    ->sortable()
+                    ->money('IDR'),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Filters\SelectFilter::make('supplier')
+                    ->relationship('supplier', 'name'),
+                Tables\Filters\Filter::make('purchase_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('from'),
+                        Forms\Components\DatePicker::make('until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn(Builder $query, $date): Builder => $query->whereDate('purchase_date', '>=', $date),
+                            )
+                            ->when(
+                                $data['until'],
+                                fn(Builder $query, $date): Builder => $query->whereDate('purchase_date', '<=', $date),
+                            );
+                    }),
             ]);
     }
 
