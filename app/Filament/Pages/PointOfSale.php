@@ -20,6 +20,8 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
     public ?float $change = null;
     public ?int $lastTransactionId = null;
 
+    public $payment_method = 'cash';
+
     protected static string $view = 'filament.pages.point-of-sale';
 
 
@@ -42,26 +44,28 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
                 ->options(Product::all()->pluck('name', 'id'))
                 ->searchable()
                 ->required(),
-        
+
             TextInput::make('quantity')
                 ->numeric()
                 ->minValue(1)
                 ->default(1)
                 ->required(),
+
         ];
     }
 
     public function addToCart()
     {
         $product = Product::find($this->product_id);
-        if (!$product) return;
+        if (!$product)
+            return;
 
         $this->cart[] = [
             'product_id' => $product->id,
-            'name'       => $product->name,
-            'price'      => $product->price,
-            'quantity'   => $this->quantity,
-            'subtotal'   => $product->price * $this->quantity,
+            'name' => $product->name,
+            'price' => $product->price,
+            'quantity' => $this->quantity,
+            'subtotal' => $product->price * $this->quantity,
         ];
 
         $this->reset('product_id', 'quantity');
@@ -82,24 +86,24 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
     {
         $total = $this->getTotal();
 
-        if ($this->paid_amount < $total) {
+        if ($this->payment_method === 'cash' && $this->paid_amount < $total) {
             $this->addError('paid_amount', 'Uang bayar kurang dari total.');
             return;
         }
 
         $transaction = Transaction::create([
-            'user_id'     => optional(\Illuminate\Support\Facades\Auth::user())->id,
+            'user_id' => optional(\Illuminate\Support\Facades\Auth::user())->id,
             'total_price' => $total,
             'paid_amount' => $this->paid_amount,
-            'change'      => $this->paid_amount - $total,
+            'change' => $this->paid_amount - $total,
         ]);
 
         foreach ($this->cart as $item) {
             TransactionItem::create([
                 'transaction_id' => $transaction->id,
-                'product_id'     => $item['product_id'],
-                'quantity'       => $item['quantity'],
-                'subtotal'       => $item['subtotal'],
+                'product_id' => $item['product_id'],
+                'quantity' => $item['quantity'],
+                'subtotal' => $item['subtotal'],
             ]);
 
             // Kurangi stok
@@ -109,10 +113,7 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
         $this->change = $transaction->change;
         $this->lastTransactionId = $transaction->id;
 
-        // Reset cart, lalu redirect ke PDF download
         $this->reset(['cart', 'paid_amount']);
-
-        return redirect()->route('receipt.pdf', ['transaction' => $transaction->id]);
 
     }
 }
