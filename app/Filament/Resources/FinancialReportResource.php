@@ -3,15 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\FinancialReportResource\Pages;
-use App\Filament\Resources\FinancialReportResource\RelationManagers;
 use App\Models\FinancialReport;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class FinancialReportResource extends Resource
 {
@@ -23,11 +20,18 @@ class FinancialReportResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Forms\Components\DatePicker::make('date')
+                    ->required(),
+                Forms\Components\TextInput::make('type')
+                    ->required(),
+                Forms\Components\TextInput::make('description')
+                    ->required(),
+                Forms\Components\TextInput::make('amount')
+                    ->numeric()
+                    ->required(),
             ]);
     }
 
-    // FinancialReportResource.php
     public static function table(Table $table): Table
     {
         return $table
@@ -40,13 +44,19 @@ class FinancialReportResource extends Resource
                     ->money('IDR'),
             ])
             ->filters([
-                // Tambahkan filter sesuai kebutuhan
+                // Add filters if needed
             ]);
     }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ManageFinancialReports::route('/'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false; // Sembunyikan dari sidebar, tapi tetap bisa diakses via URL
     }
 }

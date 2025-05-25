@@ -22,7 +22,7 @@ class StockPurchaseResource extends Resource
 {
     protected static ?string $model = StockPurchase::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+        protected static ?string $navigationIcon = 'heroicon-o-truck';
 
     public static function form(Form $form): Form
     {
@@ -46,7 +46,7 @@ class StockPurchaseResource extends Resource
                     ->default(now()),
 
                 Forms\Components\Repeater::make('items')
-                    ->relationship()
+                    ->relationship('items') // Specify the relationship name
                     ->schema([
                         Select::make('product_id')
                             ->relationship('product', 'name')
@@ -82,7 +82,7 @@ class StockPurchaseResource extends Resource
 
                 TextInput::make('total_price')
                     ->numeric()
-                    ->disabled()
+                    ->readOnly()
                     ->dehydrated()
                     ->default(0),
             ]);
@@ -90,14 +90,15 @@ class StockPurchaseResource extends Resource
 
     protected static function updateTotalPrice(Get $get, Set $set): void
     {
-        $items = collect($get('items'))->filter(fn ($item) => 
-            !empty($item['product_id']) && 
-            !empty($item['quantity']) && 
+        $itemsData = $get('items');
+        $items = collect(is_array($itemsData) ? $itemsData : [])->filter(fn ($item) =>
+            !empty($item['product_id']) &&
+            !empty($item['quantity']) &&
             !empty($item['price'])
         );
 
         $total = $items->sum(fn ($item) => (float) $item['quantity'] * (float) $item['price']);
-        
+
         $set('total_price', number_format($total, 2, '.', ''));
     }
 

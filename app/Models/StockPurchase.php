@@ -26,7 +26,7 @@ class StockPurchase extends Model
     protected static function booted()
     {
         static::saving(function (StockPurchase $stockPurchase) {
-            $stockPurchase->total_price = $stockPurchase->items->sum('subtotal');
+            $stockPurchase->total_price = $stockPurchase->items()->get()->sum('subtotal');
         });
     }
 }
