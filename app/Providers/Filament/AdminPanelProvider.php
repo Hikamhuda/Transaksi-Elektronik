@@ -28,6 +28,8 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('WARYAS')
+            ->brandLogo(asset('image/WARYAS.png'))
+            ->brandLogoHeight('3rem')
 
             ->colors([
                 'primary' => Color::Blue,
