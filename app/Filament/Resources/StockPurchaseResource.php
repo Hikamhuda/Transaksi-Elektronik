@@ -22,7 +22,9 @@ class StockPurchaseResource extends Resource
 {
     protected static ?string $model = StockPurchase::class;
 
-        protected static ?string $navigationIcon = 'heroicon-o-truck';
+    protected static ?string $navigationIcon = 'heroicon-o-truck';
+    protected static ?string $navigationGroup = 'Inventory Management';
+
 
     public static function form(Form $form): Form
     {
