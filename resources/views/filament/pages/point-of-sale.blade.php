@@ -59,18 +59,19 @@
                             <option value="qris">QRIS</option>
                         </select>
                     </div>
-
                 </div>
 
                 <div class="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
-                        <p class="text-lg">Total: <strong>{{ number_format($this->getTotal(), 0, ',', '.') }}</strong>
+                        <p class="text-lg">Total: <strong>{{ number_format($total, 0, ',', '.') }}</strong>
                         </p>
                     </div>
                     <div class="flex flex-col md:flex-row md:items-center gap-2">
-                        <input type="number" wire:model="paid_amount"
-                            class="border p-2 rounded w-full md:w-40 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                            placeholder="Uang Dibayar">
+                        @if($payment_method === 'cash')
+                            <input type="number" wire:model="paid_amount"
+                                class="border p-2 rounded w-full md:w-40 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                                placeholder="Uang Dibayar">
+                        @endif
                         <x-filament::button wire:click="processTransaction"
                             class="mt-2 md:mt-0 w-full md:w-auto flex justify-center items-center">
                             <span class="whitespace-nowrap">Proses Transaksi</span>
@@ -88,4 +89,81 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal detail transaksi --}}
+    @if($pendingTransaction)
+        <div
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            x-data="{ show: true }"
+            x-show="show"
+            x-cloak
+        >
+            <div class="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
+                <div class="space-y-4 text-sm">
+                    <div class="space-y-1">
+                        <div><strong>ID Transaksi:</strong> (Belum Tersimpan)</div>
+                        <div><strong>Kasir:</strong> {{ \App\Models\User::find($pendingTransaction['user_id'])->name ?? '-' }}</div>
+                        <div><strong>Total:</strong> Rp {{ number_format($pendingTransaction['total_price'], 0, ',', '.') }}</div>
+                        <div><strong>Bayar:</strong> Rp {{ number_format($pendingTransaction['paid_amount'], 0, ',', '.') }}</div>
+                        <div><strong>Kembali:</strong> Rp {{ number_format($pendingTransaction['change'], 0, ',', '.') }}</div>
+                        <div><strong>Waktu:</strong> {{ now()->format('d M Y H:i') }}</div>
+                    </div>
+                    <div class="border-t pt-2">
+                        <h3 class="font-semibold mb-2">Item yang Dibeli:</h3>
+                        <table class="w-full text-left border text-sm mb-4">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-2 py-1 border">Produk</th>
+                                    <th class="px-2 py-1 border">Jumlah</th>
+                                    <th class="px-2 py-1 border">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($pendingTransaction['cart'] as $item)
+                                    <tr>
+                                        <td class="px-2 py-1 border">{{ $item['name'] }}</td>
+                                        <td class="px-2 py-1 border">{{ $item['quantity'] }}</td>
+                                        <td class="px-2 py-1 border">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="mt-4 text-right flex gap-2 justify-end">
+                    <button
+                        class="px-4 py-2 bg-primary-600 text-white rounded"
+                        wire:click="confirmTransaction"
+                    >Konfirmasi</button>
+                    <button
+                        class="px-4 py-2 bg-gray-400 text-white rounded"
+                        wire:click="cancelTransaction"
+                        @click="show = false;"
+                    >Batal</button>
+                </div>
+            </div>
+        </div>
+    @endif
+    {{-- Modal detail transaksi setelah konfirmasi --}}
+    @if($lastTransactionId && !$pendingTransaction)
+        @php
+            $transaction = \App\Models\Transaction::with('items.product', 'user')->find($lastTransactionId);
+        @endphp
+        <div
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            x-data="{ show: true }"
+            x-show="show"
+            x-cloak
+        >
+            <div class="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
+                @include('filament.modals.transaction-detail', ['transaction' => $transaction])
+                <div class="mt-4 text-right">
+                    <button
+                        class="px-4 py-2 bg-primary-600 text-white rounded"
+                        @click="show = false; window.location.reload();"
+                    >Tutup</button>
+                </div>
+            </div>
+        </div>
+    @endif
 </x-filament::page>

@@ -12,6 +12,7 @@ return new class extends Migration {
             $table->decimal('total_price', 12, 2);
             $table->decimal('paid_amount', 12, 2);
             $table->decimal('change', 12, 2)->default(0);
+            $table->enum('payment_method', ['cash', 'qris'])->default('cash');
             $table->timestamps();
         });
     }

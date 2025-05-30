@@ -20,7 +20,7 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
     public ?float $change = null;
     public ?int $lastTransactionId = null;
 
-    public $payment_method = 'cash';
+    public $payment_method = 'cash'; // default string
 
     protected static string $view = 'filament.pages.point-of-sale';
 
@@ -29,11 +29,13 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
     public $product_id = null;
     public $quantity = 1;
     public $paid_amount = 0;
-
+    public $total = 0;
+    public $pendingTransaction = null;
 
     public function mount()
     {
         $this->form->fill();
+        $this->total = $this->getTotal();
     }
 
     protected function getFormSchema(): array
@@ -69,12 +71,14 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
         ];
 
         $this->reset('product_id', 'quantity');
+        $this->total = $this->getTotal();
     }
 
     public function removeFromCart($index)
     {
         unset($this->cart[$index]);
         $this->cart = array_values($this->cart);
+        $this->total = $this->getTotal();
     }
 
     public function getTotal(): float
@@ -85,35 +89,57 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
     public function processTransaction()
     {
         $total = $this->getTotal();
+        $this->total = $total;
 
         if ($this->payment_method === 'cash' && $this->paid_amount < $total) {
             $this->addError('paid_amount', 'Uang bayar kurang dari total.');
             return;
         }
+        if ($this->payment_method === 'cash' && !$this->paid_amount) {
+            $this->addError('paid_amount', 'Masukkan uang dibayar.');
+            return;
+        }
 
-        $transaction = Transaction::create([
+        // Simpan data transaksi ke variabel sementara
+        $this->pendingTransaction = [
             'user_id' => optional(\Illuminate\Support\Facades\Auth::user())->id,
             'total_price' => $total,
             'paid_amount' => $this->paid_amount,
             'change' => $this->paid_amount - $total,
-        ]);
+            'payment_method' => $this->payment_method,
+            'cart' => $this->cart,
+        ];
+        $this->dispatch('show-transaction-modal');
+    }
 
-        foreach ($this->cart as $item) {
+    public function confirmTransaction()
+    {
+        if (!$this->pendingTransaction) return;
+        $data = $this->pendingTransaction;
+        $transaction = Transaction::create([
+            'user_id' => $data['user_id'],
+            'total_price' => $data['total_price'],
+            'paid_amount' => $data['paid_amount'],
+            'change' => $data['change'],
+            'payment_method' => $data['payment_method'],
+        ]);
+        foreach ($data['cart'] as $item) {
             TransactionItem::create([
                 'transaction_id' => $transaction->id,
                 'product_id' => $item['product_id'],
                 'quantity' => $item['quantity'],
                 'subtotal' => $item['subtotal'],
             ]);
-
-            // Kurangi stok
             Product::where('id', $item['product_id'])->decrement('stock', $item['quantity']);
         }
-
         $this->change = $transaction->change;
         $this->lastTransactionId = $transaction->id;
+        $this->reset(['cart', 'paid_amount', 'pendingTransaction']);
+        $this->dispatch('show-transaction-modal', id: $transaction->id);
+    }
 
-        $this->reset(['cart', 'paid_amount']);
-
+    public function cancelTransaction()
+    {
+        $this->pendingTransaction = null;
     }
 }
