@@ -3,15 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SupplierResource\Pages;
-use App\Filament\Resources\SupplierResource\RelationManagers;
 use App\Models\Supplier;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class SupplierResource extends Resource
 {
@@ -20,19 +17,20 @@ class SupplierResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
     protected static ?string $navigationGroup = 'Inventory Management';
 
-
-    // SupplierResource.php
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label('Supplier Name')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('phone')
+                    ->label('Phone Number')
                     ->tel()
                     ->maxLength(20),
                 Forms\Components\Textarea::make('address')
+                    ->label('Address')
                     ->columnSpanFull(),
             ]);
     }
@@ -42,20 +40,24 @@ class SupplierResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
+                    ->label('Name'), // ✅ Tampilkan tanpa searchable karena data terenkripsi
                 Tables\Columns\TextColumn::make('phone')
+                    ->label('Phone'), // ✅ Sama
+                Tables\Columns\TextColumn::make('address') // Tambahkan ini
+                    ->limit(30)
+                    ->wrap()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Created At')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ]);
     }
+
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array

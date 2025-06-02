@@ -27,7 +27,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('WARYAS')
+            ->brandName('Warung Ibu Lala')
             ->brandLogo(asset('image/WARYAS.png'))
             ->brandLogoHeight('3rem')
 

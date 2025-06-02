@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('phone')->nullable();
-            $table->text('address')->nullable();
+            $table->binary('name', 255); // Use binary for encrypted data
+            $table->binary('phone', 255)->nullable(); // Use binary for encrypted data
+            $table->text('address')->nullable(); // Use text for encrypted data (or BLOB)
             $table->timestamps();
         });
     }
