@@ -76,6 +76,12 @@
                             class="mt-2 md:mt-0 w-full md:w-auto flex justify-center items-center">
                             <span class="whitespace-nowrap">Proses Transaksi</span>
                         </x-filament::button>
+                        @if($payment_method === 'cash')
+                            <a href="{{ route('cash-detection-webcam') }}" target="_blank"
+                               class="mt-2 w-full md:w-auto flex justify-center items-center px-4 py-2 bg-blue-600 text-white rounded text-center hover:bg-blue-700 transition">
+                                <span class="whitespace-nowrap">Deteksi Uang via Webcam</span>
+                            </a>
+                        @endif
                     </div>
                 </div>
 
