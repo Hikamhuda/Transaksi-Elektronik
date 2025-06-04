@@ -92,10 +92,39 @@
 
     {{-- Modal detail transaksi --}}
     @if($pendingTransaction)
+        {{-- Modal Deteksi Uang (z-60, di atas modal konfirmasi) --}}
+        <div
+            x-data="{ open: false }"
+            x-on:open-cash-detection-modal.window="open = true"
+            x-show="open"
+            x-cloak
+            class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50"
+            style="z-index: 60;"
+        >
+            <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+                <h3 class="text-lg font-bold mb-4">Deteksi Keaslian Uang</h3>
+                <input type="file" wire:model="cash_image" accept="image/*"
+                    class="border p-2 rounded w-full mb-2" id="cash_image_modal_upload">
+                @if($cash_image)
+                    <x-filament::button wire:click="detectCashAuthenticity"
+                        class="mt-2 w-full flex justify-center items-center bg-green-600">
+                        <span class="whitespace-nowrap">Deteksi Sekarang</span>
+                    </x-filament::button>
+                @endif
+                @if($cash_detection_result)
+                    <div class="mt-2 p-2 rounded text-white"
+                        style="background-color: {{ $cash_detection_result['is_real'] ? '#16a34a' : '#dc2626' }};">
+                        <strong>Hasil Deteksi:</strong> {{ $cash_detection_result['message'] }}
+                    </div>
+                @endif
+                <button class="mt-4 px-4 py-2 bg-gray-400 text-white rounded w-full" x-on:click="open = false">Tutup</button>
+            </div>
+        </div>
+        {{-- Modal detail transaksi (z-50, di bawah modal deteksi uang) --}}
         <div
             class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
             x-data="{ show: true }"
-            x-show="show"
+            x-show="show && !$refs.cashDetectionModalOpen?.open"
             x-cloak
         >
             <div class="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
@@ -131,6 +160,10 @@
                     </div>
                 </div>
                 <div class="mt-4 text-right flex gap-2 justify-end">
+                    <button
+                        class="px-4 py-2 bg-green-600 text-black rounded"
+                        x-on:click="$dispatch('open-cash-detection-modal')"
+                    >Cek Keaslian Uang</button>
                     <button
                         class="px-4 py-2 bg-primary-600 text-white rounded"
                         wire:click="confirmTransaction"

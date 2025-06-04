@@ -32,6 +32,9 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
     public $total = 0;
     public $pendingTransaction = null;
 
+    public $cash_image;
+    public $cash_detection_result = null;
+
     public function mount()
     {
         $this->form->fill();
@@ -141,5 +144,91 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
     public function cancelTransaction()
     {
         $this->pendingTransaction = null;
+    }
+
+    public function updatedCashImage($value)
+    {
+        $this->cash_detection_result = null;
+    }
+
+    public function detectCashAuthenticity()
+    {
+        if (!$this->cash_image) {
+            $this->cash_detection_result = [
+                'is_real' => false,
+                'message' => 'Silakan upload gambar uang terlebih dahulu.'
+            ];
+            return;
+        }
+        // Validasi file gambar
+        $allowedMime = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!in_array($this->cash_image->getMimeType(), $allowedMime)) {
+            $this->cash_detection_result = [
+                'is_real' => false,
+                'message' => 'File harus berupa gambar JPG atau PNG.'
+            ];
+            return;
+        }
+        try {
+            $imagePath = $this->cash_image->getRealPath();
+            $imageData = base64_encode(file_get_contents($imagePath));
+            if (strlen($imageData) > 5 * 1024 * 1024) { // 5MB
+                $this->cash_detection_result = [
+                    'is_real' => false,
+                    'message' => 'File gambar terlalu besar.'
+                ];
+                return;
+            }
+            $apiUrl = 'https://serverless.roboflow.com/deteksi-uang-palsu-skqya/1?api_key=PY2aPJuUrLJY9fwKF6e3';
+            $client = new \GuzzleHttp\Client();
+            $response = $client->request('POST', $apiUrl, [
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                ],
+                'body' => $imageData,
+                'http_errors' => false,
+                'timeout' => 30,
+                'verify' => false,
+            ]);
+        } catch (\Exception $e) {
+            $this->cash_detection_result = [
+                'is_real' => false,
+                'message' => 'Gagal menghubungi API deteksi: ' . $e->getMessage()
+            ];
+            return;
+        }
+        if ($response && $response->getStatusCode() === 200) {
+            $result = json_decode($response->getBody(), true);
+            $classRaw = $result['predictions'][0]['class'] ?? '';
+            $class = strtoupper($classRaw);
+            // Ambil status dan nominal
+            $isReal = strpos($class, 'ASLI') !== false;
+            $isFake = strpos($class, 'PALSU') !== false;
+            // Nominal: ambil angka dan satuan jika ada
+            if (preg_match('/(\d+\s*RIBU|UANG|TIDAK DIKETAHUI)/i', $classRaw, $matches)) {
+                $nominal = trim($matches[1]);
+            } else {
+                $nominal = 'Tidak Diketahui';
+            }
+            // Status
+            if ($isReal) {
+                $status = 'ASLI';
+            } elseif ($isFake) {
+                $status = 'PALSU';
+            } else {
+                $status = 'TIDAK DIKETAHUI';
+            }
+            $message = "Nominal: $nominal, Status: $status";
+            $this->cash_detection_result = [
+                'is_real' => $isReal,
+                'message' => $message
+            ];
+        } else {
+            $errorBody = $response ? $response->getBody()->getContents() : '';
+            $this->cash_detection_result = [
+                'is_real' => false,
+                'message' => 'Gagal mendeteksi keaslian uang. Status: ' . ($response ? $response->getStatusCode() : 'No response') . ' | ' . $errorBody
+            ];
+        }
     }
 }
