@@ -2,9 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect('/admin/login');
-});
+// ...existing code...
 
 Route::get('/cash-detection-webcam', function () {
     return view('webcam-cash-detection');

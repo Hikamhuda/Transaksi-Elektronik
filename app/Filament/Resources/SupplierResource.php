@@ -47,6 +47,9 @@ class SupplierResource extends Resource
                     ->limit(30)
                     ->wrap()
                     ->searchable(),
+                Tables\Columns\TextColumn::make('address')
+                    ->limit(50)
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created At')
                     ->dateTime()
