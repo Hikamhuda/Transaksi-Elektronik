@@ -93,15 +93,16 @@ class StockPurchaseResource extends Resource
     protected static function updateTotalPrice(Get $get, Set $set): void
     {
         $itemsData = $get('items');
-        $items = collect(is_array($itemsData) ? $itemsData : [])->filter(fn ($item) =>
+        $items = collect(is_array($itemsData) ? $itemsData : [])->filter(
+            fn($item) =>
             !empty($item['product_id']) &&
             !empty($item['quantity']) &&
             !empty($item['price'])
         );
 
-        $total = $items->sum(fn ($item) => (float) $item['quantity'] * (float) $item['price']);
+        $total = $items->sum(fn($item) => (float) $item['quantity'] * (float) $item['price']);
 
-        $set('total_price', number_format($total, 2, '.', ''));
+        $set('total_price', $total); // <-- ubah di sini, jangan pakai number_format
     }
 
     public static function table(Table $table): Table
@@ -118,6 +119,16 @@ class StockPurchaseResource extends Resource
                     ->numeric()
                     ->sortable()
                     ->money('IDR'),
+                Tables\Columns\TextColumn::make('items')
+                    ->label('Produk Dibeli')
+                    ->formatStateUsing(function ($state, $record) {
+                        // Ambil nama produk dari relasi items
+                        return $record->items->map(function ($item) {
+                            return $item->product->name . ' (' . $item->quantity . ')';
+                        })->implode(', ');
+                    })
+                    ->wrap()
+                    ->limit(50),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
