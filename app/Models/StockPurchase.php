@@ -25,8 +25,6 @@ class StockPurchase extends Model
     // app/Models/StockPurchase.php
     protected static function booted()
     {
-        static::saving(function (StockPurchase $stockPurchase) {
-            $stockPurchase->total_price = $stockPurchase->items()->get()->sum('subtotal');
-        });
+        // Hapus event saving, biarkan total_price diisi dari form/page
     }
 }

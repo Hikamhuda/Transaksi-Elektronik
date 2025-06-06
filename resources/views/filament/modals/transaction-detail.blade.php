@@ -1,10 +1,16 @@
 <div class="space-y-4 text-sm">
     <div class="space-y-1">
         <div><strong>ID Transaksi:</strong> {{ $transaction->id }}</div>
-        <div><strong>Kasir:</strong> {{ $transaction->user->name ?? '-' }}</div>
+        <div><strong>Kasir:</strong>
+            @php
+                $user = $transaction->user ?? null;
+            @endphp
+            {{ $user ? \App\Helpers\EncryptHelper::decrypt($user->name) : '-' }}
+        </div>
         <div><strong>Total:</strong> Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</div>
         <div><strong>Bayar:</strong> Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</div>
         <div><strong>Kembali:</strong> Rp {{ number_format($transaction->change, 0, ',', '.') }}</div>
+        <div><strong>Metode Pembayaran:</strong> {{ ucfirst($transaction->payment_method ?? '-') }}</div>
         <div><strong>Waktu:</strong> {{ $transaction->created_at->format('d M Y H:i') }}</div>
     </div>
 

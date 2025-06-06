@@ -165,13 +165,15 @@
                     <div class="space-y-1">
                         <div><strong>ID Transaksi:</strong> (Belum Tersimpan)</div>
                         <div><strong>Kasir:</strong>
-                            {{ \App\Models\User::find($pendingTransaction['user_id'])->name ?? '-' }}</div>
+                            {{ \App\Helpers\EncryptHelper::decrypt(\App\Models\User::find($pendingTransaction['user_id'])->name ?? '-') }}
+                        </div>
                         <div><strong>Total:</strong> Rp {{ number_format($pendingTransaction['total_price'], 0, ',', '.') }}
                         </div>
                         <div><strong>Bayar:</strong> Rp {{ number_format($pendingTransaction['paid_amount'], 0, ',', '.') }}
                         </div>
                         <div><strong>Kembali:</strong> Rp {{ number_format($pendingTransaction['change'], 0, ',', '.') }}
                         </div>
+                        <div><strong>Metode Pembayaran:</strong> {{ ucfirst($pendingTransaction['payment_method'] ?? '-') }}</div>
                         <div><strong>Waktu:</strong> {{ now()->format('d M Y H:i') }}</div>
                     </div>
                     <div class="border-t pt-2">

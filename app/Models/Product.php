@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Helpers\EncryptHelper;
 
 class Product extends Model
 {
@@ -24,5 +26,13 @@ class Product extends Model
     public function transactionItems()
     {
         return $this->hasMany(TransactionItem::class);
+    }
+
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => EncryptHelper::decrypt($value),
+            set: fn ($value) => EncryptHelper::encrypt($value)
+        );
     }
 }

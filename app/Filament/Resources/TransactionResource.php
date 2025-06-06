@@ -15,6 +15,7 @@ use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use App\Helpers\EncryptHelper;
 
 class TransactionResource extends Resource
 {
@@ -41,7 +42,7 @@ class TransactionResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('id')->label('ID'),
-                TextColumn::make('user.name')->label('Kasir'),
+                TextColumn::make('user.name')->label('Kasir')->formatStateUsing(fn($state) => EncryptHelper::decrypt($state)),
                 TextColumn::make('total_price')->label('Total')->money('IDR'),
                 TextColumn::make('paid_amount')->label('Bayar')->money('IDR'),
                 TextColumn::make('change')->label('Kembali')->money('IDR'),

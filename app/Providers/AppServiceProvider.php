@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Providers\EncryptedUserProvider;
 use Filament\Facades\Filament;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -12,7 +14,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        Auth::provider('encrypted-eloquent', function ($app, array $config) {
+            return new EncryptedUserProvider($app['hash'], $config['model']);
+        });
     }
 
     /**
