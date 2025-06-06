@@ -179,7 +179,8 @@ class PointOfSale extends Page implements Forms\Contracts\HasForms
                 ];
                 return;
             }
-            $apiUrl = 'https://serverless.roboflow.com/deteksi-uang-palsu-skqya/1?api_key=PY2aPJuUrLJY9fwKF6e3';
+            $apiKey = env('ROBOFLOW_API_KEY', '');
+            $apiUrl = 'https://serverless.roboflow.com/deteksi-uang-palsu-skqya/1?api_key=' . $apiKey;
             $client = new \GuzzleHttp\Client();
             $response = $client->request('POST', $apiUrl, [
                 'headers' => [
